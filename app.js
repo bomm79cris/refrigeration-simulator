@@ -56,6 +56,11 @@ const appState = {
     animationFrame: 0,
     particles: []
 };
+// Drag and drop functionality
+let draggedComponent = null;
+let dragOffset = { x: 0, y: 0 };
+let connectingFrom = null;
+let connectionPreview = null; 
 
 // Canvas setup
 const canvas = document.getElementById('mainCanvas');
@@ -699,10 +704,6 @@ drawParticle(ctx, x, y, type, length = 6) {
     }
 }
 
-// Drag and drop functionality
-let draggedComponent = null;
-let dragOffset = { x: 0, y: 0 };
-let connectingFrom = null;
 
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -731,7 +732,7 @@ canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     if (draggedComponent) {
         draggedComponent.x = x - dragOffset.x;
         draggedComponent.y = y - dragOffset.y;
@@ -739,6 +740,35 @@ canvas.addEventListener('mousemove', (e) => {
         render();
     }
     
+    // AGREGAR ESTE BLOQUE COMPLETO
+    if (connectingFrom) {
+        // Buscar si estamos cerca de un punto de entrada válido
+        let nearValidPoint = false;
+        for (const comp of appState.components) {
+            if (comp !== connectingFrom.component && 
+                comp.isNearConnectionPoint(x, y, comp.inPoint)) {
+                nearValidPoint = true;
+                // Ajustar el punto final al punto de entrada
+                connectionPreview = {
+                    from: connectingFrom.component.outPoint,
+                    to: comp.inPoint,
+                    isNearValid: true
+                };
+                break;
+            }
+        }
+        
+        if (!nearValidPoint) {
+            connectionPreview = {
+                from: connectingFrom.component.outPoint,
+                to: { x, y },
+                isNearValid: false
+            };
+        }
+        
+        render();
+    }
+
     // Update tooltip
     updateTooltip(x, y);
 });
@@ -747,22 +777,24 @@ canvas.addEventListener('mouseup', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     if (connectingFrom) {
         // Try to make a connection
         for (const comp of appState.components) {
-            if (comp !== connectingFrom.component &&
+            if (comp !== connectingFrom.component && 
                 comp.isNearConnectionPoint(x, y, comp.inPoint)) {
                 attemptConnection(connectingFrom.component, comp);
                 break;
             }
         }
         connectingFrom = null;
+        connectionPreview = null; // AGREGAR ESTA LÍNEA
     }
-    
+
     draggedComponent = null;
     render();
 });
+
 
 // Palette drag and drop
 const paletteItems = document.querySelectorAll('.palette-item');
@@ -1249,15 +1281,79 @@ function animate() {
 }
 
 // Render function
+// Render function
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw connections first
     appState.connections.forEach(conn => conn.draw(ctx));
-    
+
+    // AGREGAR ESTAS LÍNEAS
+    // Draw connection preview while dragging
+    if (connectionPreview) {
+        drawConnectionPreview(ctx, connectionPreview.from, connectionPreview.to);
+    }
+
     // Draw components
     appState.components.forEach(comp => comp.draw(ctx));
 }
+function drawConnectionPreview(ctx, start, end) {
+    ctx.save();
+    
+    // Cambiar color si está cerca de un punto válido
+    const isNearValid = connectionPreview.isNearValid;
+    const alpha = isNearValid ? 0.8 : 0.5;
+    const color = isNearValid ? '#27ae60' : '#5d6d7e'; // Verde si es válido
+    
+    ctx.globalAlpha = alpha;
+    
+    // Outer pipe
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.setLineDash(isNearValid ? [] : [10, 5]); // Sólido si es válido
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    
+    // Smooth curved connection
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const controlX = midX + (start.y > end.y ? -50 : 50);
+    const controlY = midY + (start.x > end.x ? -30 : 30);
+    
+    ctx.quadraticCurveTo(controlX, controlY, end.x, end.y);
+    ctx.stroke();
+    
+    // Inner pipe
+    ctx.strokeStyle = isNearValid ? '#2ecc71' : '#95a5a6';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.quadraticCurveTo(controlX, controlY, end.x, end.y);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+    
+    // Punto final
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = isNearValid ? '#27ae60' : '#3498db';
+    ctx.fill();
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Texto de ayuda
+    ctx.fillStyle = '#2c3e50';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'left';
+    const helpText = isNearValid ? '✓ Suelta para conectar' : 'Arrastra al punto de entrada';
+    ctx.fillText(helpText, end.x + 15, end.y);
+    
+    ctx.restore();
+}
+
 
 // Initial render
 render();
