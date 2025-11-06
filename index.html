@@ -23,19 +23,15 @@
             <div class="control-group">
                 <label for="refrigerantSelect" style="color: black;">Refrigerante:</label>
                 <select id="refrigerantSelect" class="form-control">
-                    <option value="R134a">R-134a</option>
-                    <option value="R22">R-22</option>
-                    <option value="R410A">R-410A</option>
-                    <option value="R404A">R-404A</option>
-                    <option value="R507A">R-507A</option>
+                    <option value="NH3">NH3</option>
                 </select>
             </div>
             <div class="control-group">
-                <label for="evapTemp" style="color: black;">T. Evaporación (°C):</label>
+                <label for="evapTemp" style="color: black;">T. Evaporación (°F):</label>
                 <input type="number" id="evapTemp" class="form-control" value="10" min="-50" max="20" step="0.1">
             </div>
             <div class="control-group">
-                <label for="condTemp"style="color: black;">T. Condensación (°C):</label>
+                <label for="condTemp"style="color: black;">T. Condensación (°F):</label>
                 <input type="number" id="condTemp" class="form-control" value="40" min="20" max="80" step="0.1">
             </div>
                     <button id="configBtn" class="btn btn--secondary">Configurar Datos</button>
