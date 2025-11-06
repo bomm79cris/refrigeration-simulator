@@ -89,38 +89,95 @@ class Component {
         this.connections = { in: null, out: null };
         this.animating = false;
         this.animationPhase = 0;
-        
+        this.rotation = 0; 
         // Define connection points
         this.setConnectionPoints();
     }
     
-    setConnectionPoints() {
-        switch(this.type) {
-            case 'compressor':
-                this.inPoint = { x: this.x - 40, y: this.y + 40 };
-                this.outPoint = { x: this.x + this.width + 20, y: this.y - 20 };
-                break;
-            case 'condenser':
-                this.inPoint = { x: this.x - 20, y: this.y - 20 };
-                this.outPoint = { x: this.x + 20, y: this.y + this.height + 20 };
-                break;
-            case 'expansion':
-                this.inPoint = { x: this.x - 20, y: this.y };
-                this.outPoint = { x: this.x + this.width + 20, y: this.y };
-                break;
-            case 'evaporator':
-                this.inPoint = { x: this.x + this.width + 20, y: this.y + 40 };
-                this.outPoint = { x: this.x - 40, y: this.y + 40 };
-                break;
-        }
+   setConnectionPoints() {
+    const offset = 40;
+    
+    switch(this.type) {
+        case 'compressor':
+            this.baseInPoint = { x: -offset, y: 40 };
+            this.baseOutPoint = { x: this.width + 20, y: -20 };
+            break;
+        case 'condenser':
+            this.baseInPoint = { x: -20, y: -20 };
+            this.baseOutPoint = { x: 20, y: this.height + 20 };
+            break;
+        case 'expansion':
+            this.baseInPoint = { x: -20, y: 0 };
+            this.baseOutPoint = { x: this.width + 20, y: 0 };
+            break;
+        case 'evaporator':
+            this.baseInPoint = { x: this.width + 20, y: 40 };
+            this.baseOutPoint = { x: -offset, y: 40 };
+            break;
     }
     
-    updateConnectionPoints() {
+    // Calcular puntos finales con rotación
+    this.updateConnectionPoints();
+}
+
+   updateConnectionPoints() {
+    // Si no hay puntos base, configurarlos
+    if (!this.baseInPoint || !this.baseOutPoint) {
         this.setConnectionPoints();
+        return;
     }
     
+    // Aplicar rotación a los puntos base
+    const rotatedInPoint = this.rotatePoint(this.baseInPoint, this.rotation);
+    const rotatedOutPoint = this.rotatePoint(this.baseOutPoint, this.rotation);
+    
+    // Establecer puntos finales
+    this.inPoint = {
+        x: this.x + rotatedInPoint.x,
+        y: this.y + rotatedInPoint.y
+    };
+    this.outPoint = {
+        x: this.x + rotatedOutPoint.x,
+        y: this.y + rotatedOutPoint.y
+    };
+}
+rotatePoint(point, degrees) {
+    if (degrees === 0) {
+        return { x: point.x, y: point.y };
+    }
+    
+    const radians = (degrees * Math.PI) / 180;
+    const centerX = this.width / 2;
+    const centerY = this.height / 2;
+    
+    const translatedX = point.x - centerX;
+    const translatedY = point.y - centerY;
+    
+    const rotatedX = translatedX * Math.cos(radians) - translatedY * Math.sin(radians);
+    const rotatedY = translatedX * Math.sin(radians) + translatedY * Math.cos(radians);
+    
+    return {
+        x: rotatedX + centerX,
+        y: rotatedY + centerY
+    };
+}
+
+   rotate(degrees) {
+    this.rotation = (this.rotation + degrees) % 360;
+    if (this.rotation < 0) this.rotation += 360;
+    
+    this.updateConnectionPoints();
+}
+
     draw(ctx) {
+        ctx.save();
+        if (this.rotation !== 0) {
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.rotate((this.rotation * Math.PI) / 180);
+            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
+        }
         this.drawComponent(ctx);
+        ctx.restore();
         this.drawConnectionPoints(ctx);
     }
     
@@ -704,6 +761,21 @@ drawParticle(ctx, x, y, type, length = 6) {
     }
 }
 
+// AGREGAR después de los otros event listeners del canvas
+canvas.addEventListener('dblclick', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    for (const comp of appState.components) {
+        if (comp.contains(x, y)) {
+            comp.rotate(90);
+            render();
+            showNotification(`Componente rotado a ${comp.rotation}°`, 'info');
+            break;
+        }
+    }
+});
 
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
