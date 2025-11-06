@@ -1332,7 +1332,7 @@ async function configureSimulationData() {
         startBtn.disabled = true;
         startBtn.textContent = 'Esperando configuración...';
 
-        const response = await fetch('https://localhost:7226/api/Simulation/simulate', {
+        const response = await fetch('https://snow-back-dmcdbtdzc8adhya9.eastus2-01.azurewebsites.net/api/Simulation/simulate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
