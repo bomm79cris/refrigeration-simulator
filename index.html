@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Ciclo de Refrigeración Mecánica</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Menu Bar -->
+   <header class="top-menu">
+    <div class="menu-left">
+        <h1>Simulador de Refrigeración Mecánica</h1>
+    </div>
+    <div class="menu-center">
+        <button id="startBtn" class="btn btn--primary">Iniciar Simulación</button>
+        <button id="stopBtn" class="btn btn--secondary" disabled>Detener</button>
+        <button id="resetBtn" class="btn btn--outline">Reiniciar</button>
+        <button id="educationalBtn" class="btn btn--outline">Modo Educativo</button>
+    </div>
+    <div class="menu-simulation" >
+        <div class="simulation-controls">
+            <div class="control-group">
+                <label for="refrigerantSelect" style="color: black;">Refrigerante:</label>
+                <select id="refrigerantSelect" class="form-control">
+                    <option value="R134a">R-134a</option>
+                    <option value="R22">R-22</option>
+                    <option value="R410A">R-410A</option>
+                    <option value="R404A">R-404A</option>
+                    <option value="R507A">R-507A</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="evapTemp" style="color: black;">T. Evaporación (°C):</label>
+                <input type="number" id="evapTemp" class="form-control" value="10" min="-50" max="20" step="0.1">
+            </div>
+            <div class="control-group">
+                <label for="condTemp"style="color: black;">T. Condensación (°C):</label>
+                <input type="number" id="condTemp" class="form-control" value="40" min="20" max="80" step="0.1">
+            </div>
+                    <button id="configBtn" class="btn btn--secondary">Configurar Datos</button>
+
+        </div>
+    </div>
+    <div class="menu-right">
+        <div class="lives-indicator">
+            <span class="lives-label">Vidas:</span>
+            <span id="livesCount" class="lives-count">3/3</span>
+        </div>
+        <div class="lives-hearts">
+            <span class="heart active">♥</span>
+            <span class="heart active">♥</span>
+            <span class="heart active">♥</span>
+        </div>
+    </div>
+</header>
+
+
+    <div class="main-container">
+        <!-- Left Sidebar - Component Palette -->
+        <aside class="sidebar">
+            <h2>Componentes</h2>
+            <p class="sidebar-hint">Arrastra los componentes al tablero</p>
+            
+            <div class="component-palette">
+                <div class="palette-item" draggable="true" data-component="compressor">
+                    <div class="palette-preview">
+                        <img src="images/compressor.png" alt="Compresor">
+                    </div>
+                    <span class="palette-label">Compresor</span>
+                </div>
+
+                <div class="palette-item" draggable="true" data-component="condenser">
+                    <div class="palette-preview">
+                        <img src="images/condenser.png" alt="Condensador">
+                    </div>
+                    <span class="palette-label">Condensador</span>
+                </div>
+
+                <div class="palette-item" draggable="true" data-component="expansion">
+                    <div class="palette-preview">
+                        <img src="images/valve.png" alt="Dispositivo de Expansión">
+                    </div>
+                    <span class="palette-label">Dispositivo de Expansión</span>
+                </div>
+
+                <div class="palette-item" draggable="true" data-component="evaporator">
+                    <div class="palette-preview">
+                        <img src="images/evaporator.png" alt="Evaporador">
+                    </div>
+                    <span class="palette-label">Evaporador</span>
+                </div>
+            </div>
+
+            <div class="component-info">
+                <h3>Instrucciones:</h3>
+                <ol>
+                    <li>Arrastra los 4 componentes al tablero</li>
+                    <li>Conecta en el orden correcto</li>
+                    <li>Inicia la simulación</li>
+                </ol>
+                <p class="warning">⚠️ Conexiones incorrectas restan vidas</p>
+            </div>
+        </aside>
+
+        <!-- Main Canvas Area -->
+        <main class="canvas-area">
+            <canvas id="mainCanvas"></canvas>
+            <div id="tooltip" class="tooltip"></div>
+        </main>
+    </div>
+
+    <!-- Bottom Panel - Data Table -->
+    <section class="bottom-panel">
+        <div class="panel-header">
+            <h2>Estados Termodinámicos del Refrigerante</h2>
+            <span id="cycleCounter" class="cycle-counter">Ciclo: 0</span>
+        </div>
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Componente</th>
+                        <th>Presión (kPa)</th>
+                        <th>Temperatura (°C)</th>
+                        <th>Entalpía (kJ/kg)</th>
+                        <th>Entropía (kJ/kg·K)</th>
+                        <th>Fase</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Data rows will be added dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Educational Modal -->
+    <div id="educationalModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Modo Educativo - Componentes del Sistema</h2>
+            
+            <div class="educational-grid">
+                <div class="edu-card">
+                    <h3>🔧 Compresor</h3>
+                    <img src="images/compressor.png" alt="Compresor">
+                    <p><strong>Función:</strong> Incrementa presión y temperatura</p>
+                    <p><strong>Entrada:</strong> Gas frío de baja presión</p>
+                    <p><strong>Salida:</strong> Gas caliente de alta presión</p>
+                    <p class="edu-description">El corazón del sistema. Aumenta la presión y temperatura del refrigerante gaseoso mediante compresión mecánica. El gas de baja presión entra por la succión y sale como gas de alta presión y temperatura por la descarga.</p>
+                </div>
+
+                <div class="edu-card">
+                    <h3>❄️ Condensador</h3>
+                    <img src="images/condenser.png" alt="Condensador">
+                    <p><strong>Función:</strong> Remueve calor y condensa el gas</p>
+                    <p><strong>Entrada:</strong> Gas caliente de alta presión</p>
+                    <p><strong>Salida:</strong> Líquido caliente de alta presión</p>
+                    <p class="edu-description">Intercambiador de calor que remueve el calor del refrigerante gaseoso caliente, condensándolo a líquido. El calor se transfiere al ambiente exterior mediante aire o agua.</p>
+                </div>
+
+                <div class="edu-card">
+                    <h3>🎚️ Dispositivo de Expansión</h3>
+                    <img src="images/valve.png" alt="Válvula">
+                    <p><strong>Función:</strong> Reduce presión y temperatura</p>
+                    <p><strong>Entrada:</strong> Líquido caliente de alta presión</p>
+                    <p><strong>Salida:</strong> Mezcla líquido-vapor frío de baja presión</p>
+                    <p class="edu-description">Dispositivo que reduce drásticamente la presión del líquido refrigerante, causando una caída de temperatura. Controla el flujo de refrigerante hacia el evaporador.</p>
+                </div>
+
+                <div class="edu-card">
+                    <h3>🌡️ Evaporador</h3>
+                    <img src="images/evaporator.png" alt="Evaporador">
+                    <p><strong>Función:</strong> Absorbe calor y evapora el líquido</p>
+                    <p><strong>Entrada:</strong> Mezcla líquido-vapor frío</p>
+                    <p><strong>Salida:</strong> Gas frío de baja presión</p>
+                    <p class="edu-description">Intercambiador donde el refrigerante absorbe calor del espacio a enfriar, evaporándose de líquido a gas. Es donde ocurre el efecto de enfriamiento deseado.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
